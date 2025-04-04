@@ -3,7 +3,7 @@ project:
   output-dir: docs
 
 website:
-  title: "Neva Morgan ESS330 - Lab 6"
+  title: "nevamorgan-lab6.github.io"
   navbar:
     left:
       - href: index.qmd
