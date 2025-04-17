@@ -1,0 +1,18 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "nevamorgan-lab6.github.io"
+  navbar:
+    left:
+      - href: nm-hyperparameter-tuning.qmd
+        text: Home
+      - about.qmd
+
+format:
+  html:
+    self-contained: true
+
+editor: visual
+
