@@ -17,6 +17,7 @@ library(powerjoin)
 library(skimr)
 library(visdat)
 library(ggpubr)
+library(knitr)
 ```
 
 ##Lets return to the CAMELS dataset we have been working with in Lab 6. We will use this dataset to predict the q_mean variable using the other variables in the dataset.
@@ -24,32 +25,36 @@ library(ggpubr)
 ```{r}
 #Reading in Data - Data Import/Tidy/Transform
 
+root  <- 'https://gdex.ucar.edu/dataset/camels/file'
+
 types <- c("clim", "geol", "soil", "topo", "vege", "hydro")
 
-remote_files  <- glue('{root}/camels_{types}.txt')
+remote_files <- glue(
+  '{root}/camels_{types}.txt')
 
-local_files   <- glue('data/camels_{types}.txt')
+local_files <- glue(
+  'data/camels_{types}.txt')
 
 
 walk2(remote_files, local_files, download.file, quiet = TRUE)
 
-camels <- map(local_files, read_delim, show_col_types = FALSE) 
+camels_8 <- map(local_files, read_delim, show_col_types = FALSE) 
 
-camels <- power_full_join(camels ,by = 'gauge_id')
+camels_8 <- power_full_join(camels_8 ,by = 'gauge_id')
 
+```
+
+```{r}
 
 #**Cleaning the data**
 # 1. Model Prep
-camels |> 
+camels_8 |> 
   select(aridity, p_mean, q_mean) |> 
   drop_na() |> 
   cor()
 
 # 2. 
-
 ```
-
-
 
 
 
