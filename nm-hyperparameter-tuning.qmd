@@ -17,7 +17,7 @@ library(powerjoin)
 library(skimr)
 library(visdat)
 library(ggpubr)
-library(knitr)
+library(recipes)
 ```
 
 ##Lets return to the CAMELS dataset we have been working with in Lab 6. We will use this dataset to predict the q_mean variable using the other variables in the dataset.
@@ -44,17 +44,254 @@ camels_8 <- power_full_join(camels_8 ,by = 'gauge_id')
 
 ```
 
+# **Cleaning the data**
 ```{r}
-
-#**Cleaning the data**
+#| label: Cleaning Data
 # 1. Model Prep
 camels_8 |> 
   select(aridity, p_mean, q_mean) |> 
   drop_na() |> 
   cor()
 
-# 2. 
+vis_dat(camels_8)
+
+vis_miss(camels_8)
+
+camels_8 |> 
+  select(aridity, p_mean, q_mean) |> 
+  vis_miss()
+
+# 2. Visualizing
+ggplot(camels_8, aes(x = aridity, y = p_mean)) +
+  geom_point(aes(color = q_mean)) +
+  geom_smooth(method = "lm", color = "red", linetype = 2) +
+  scale_color_viridis_c() +
+  theme_linedraw() + 
+  theme(legend.position = "bottom") + 
+  labs(title = "Aridity vs Rainfall vs Runnoff", 
+       x = "Aridity", 
+       y = "Rainfall",
+       color = "Mean Flow")
+
+
+ggplot(camels_8, aes(x = aridity, y = p_mean)) +
+  geom_point(aes(color = q_mean)) +
+  geom_smooth(method = "lm") +
+  scale_color_viridis_c(trans = "log") +
+  scale_x_log10() + 
+  scale_y_log10() +
+  theme_linedraw() +
+  theme(legend.position = "bottom",
+        legend.key.width = unit(2.5, "cm"),
+        legend.key.height = unit(.5, "cm")) + 
+  labs(title = "Aridity vs Rainfall vs Runnoff", 
+       x = "Aridity", 
+       y = "Rainfall",
+       color = "Mean Flow") 
+
+
+camels_8 <- camels_8 |>
+  mutate(logQmean = log(q_mean))
+```
+
+## **Data Splitting**
+
+```{r}
+#| label: Data Splitting
+
+set.seed(456)
+
+cam8_split <- initial_split(camels_8, prop = 0.80)
+
+cam8_train <- training(cam8_split)
+
+cam8_test <- testing(cam8_split)
+
+cam8_cv <- vfold_cv(cam8_train, v = 10)
+
 ```
 
 
+## **Feature Engineering**
+
+```{r}
+#Building the Recipe
+
+rec_8 <- recipe(logQmean ~ aridity + p_mean, data = cam8_train) %>%
+  step_log(all_predictors()) %>%
+  step_interact(terms = ~ aridity:p_mean) %>%
+  step_novel(all_nominal_predictors()) %>%
+  step_unknown(all_nominal_predictors()) %>%
+  step_naomit(all_predictors(), all_outcomes())
+
+  
+#Baking the data
+
+cam8_baked <- prep(rec_8, cam8_train) |>
+  bake(new_data = NULL)
+
+```
+
+
+## **Resampling and Model Testing**
+
+```{r}
+#| label: Building Resamples
+
+# 1. Building Resamples
+
+cam8_cv <- vfold_cv(cam8_train, v = 10)
+
+
+# 2. Build 3 Candidate Models
+
+## a. Linear Model
+lm8_mod <- linear_reg() %>%
+  set_engine('lm') %>%
+  set_mode("regression")
+
+lm8_wf <- workflow() %>%
+  add_recipe(rec_8) %>%
+  add_model(lm8_mod) %>%
+  fit(data = cam8_train)
+
+## b. Random Forest
+rf8_mod <- rand_forest() %>%
+  set_engine('ranger') %>%
+  set_mode("regression")
+
+rf8_wf <- workflow() %>%
+  add_recipe(rec_8) %>%
+  add_model(rf8_mod) %>%
+  fit(data = cam8_train)
+
+## c. Boost Model
+b8_mod <- boost_tree() %>%
+  set_engine('xgboost') %>%
+  set_mode("regression")
+
+b8_wf <- workflow() %>%
+  add_recipe(rec_8) %>%
+  add_model(b8_mod) %>%
+  fit(data = cam8_train)
+
+
+# 3. Testing the Models
+
+wf8 <- workflow_set(list(rec_8), list(lm8_mod, rf8_mod, b8_mod)) %>%
+  workflow_map('fit_resamples', resamples = cam8_cv)
+
+autoplot(wf8)
+
+rank_results(wf8, rank_metric = "rmse", select_best = TRUE)
+#We can see that the random forest model performed better for both mapping the rsq and rmse.Since the random forest model had the lowest RMSE (0.527) and the highest Rsq (0.788) across the 10 resamples, this showed that it would be able to make more accurate predictions than the linear and xgboost models we tested in our workflow set. 
+
+# I selected the model Random Forest, using the 'ranger' engine, and a "regression" mode. The reason this combination of model testers works better for a large dataset like CAMELS is because Random forest handles nonlinearitys and interactions by using my computer's native software. As we have learned in class this Random Forests are also able to handle variable importance predictors, so irrelevant variables have less influence, making it less prone to overfitting.
+```
+
+## **Model Tuning**
+
+```{r}
+# 1. Build a Model
+
+rf8m_tune <- rand_forest(
+  mtry = tune(),
+  min_n = tune()
+) %>%
+  set_engine('ranger') %>%
+  set_mode("regression")
+
+
+# 2. Create a Workflow
+
+rf8wf_tune <- workflow() %>%
+  add_recipe(rec_8) %>%
+  add_model(rf8m_tune)
+
+
+# 3. Check the Tunable Values/Ranges
+
+dials <- extract_parameter_set_dials(rf8wf_tune)
+
+print(dials)
+
+params <- dials$object
+
+# 4. Define the Search Space
+params <- finalize(params, cam8_train)
+
+my.grid <- grid_latin_hypercube(
+  params,
+  size = 25
+)
+
+# 5. Tune the Model
+
+model_params <-  tune_grid(
+    rf8wf_tune,
+    resamples = cam8_cv,
+    grid = my.grid,
+    metrics = metric_set(rmse, rsq, mae),
+    control = control_grid(save_pred = TRUE)
+  )
+
+autoplot(model_params)
+### From this graph I can see that as we increase the randomly selected predictor values: MAE, RMSE, and RSQ all increase in their ability to fit the model to the data better, with 60 being the maximum and best model fit number. We can see that as we use more predictors at each split, this will improve the accruacy overall of the random forest model used on the CAMELS dataset. ALTHOUGH, as we turn our attention towards the Minimal Node size, we can see there isn't a clear trend regarding the data, however, the data appears to be more balanced between 10-20 nodes with a similar trend for MAE, RMSE, and RSQ.
+
+
+# 6. Check the Skill of the Tuned Model
+
+tuned_results <- tune_grid(
+  rf8wf_tune,
+  resamples = cam8_cv,
+  grid = my.grid,
+  metrics = metric_set(mae, rmse, rsq),
+  control = control_grid(save_pred = TRUE)
+)
+
+collect_metrics(tuned_results) %>%
+  count(.metric)
+
+print(metrics)
+
+
+collect_metrics(tuned_results) %>%
+  filter(.metric == "rmse") %>%
+  arrange(mean)
+
+show_best(tuned_results, metric = "mae", n = 5)
+### Based off of the MAE metric, we can see that the best hyperparameter is 51 predictor samples, with the minimum of nodes for trends at 39. Based on the results the minimum nodes has results that range relatively close together, potentially showing that it handles the predictive data to the trained data better between 26-39 nodes.
+
+hp_best <- select_best(
+  tuned_results,
+  metric = "mae")
+
+
+# 7. Finalize Your Model
+
+final_rf8_wf <- finalize_workflow(
+  rf8wf_tune, 
+  hp_best)
+```
+
+## **Final Model Verification**
+
+```{r}
+# 1. Last Fit
+my_metrics <- metric_set(mae, rmse, rsq)
+
+
+final_rf8_fit <- last_fit(
+  final_rf8_wf, split = cam8_split,
+  metrics = my_metrics)
+
+
+# 2. Collecting metrics AGAIN
+
+final_rf8_metfit <- collect_metrics(
+  final_rf8_fit)
+
+print(final_rf8_metfit)
+### What we can understand from these results is that the final model performance with the test data
+```
 
