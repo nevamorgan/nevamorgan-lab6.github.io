@@ -1,0 +1,11 @@
+---
+title: "ESS 330 - Lab 6 & 8: Machine Learning in Hydrology"
+
+author: "Neva Morgan"
+
+date: last-modified
+
+subtitle: "Check Directory to see Labs 6 & 8"
+---
+
+

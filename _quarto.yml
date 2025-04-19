@@ -6,9 +6,10 @@ website:
   title: "nevamorgan-lab6.github.io"
   navbar:
     left:
-      - href: index.qmd
+      - href: home.qmd
         text: Home
-      - about.qmd
+      - index.qmd
+      - nm-hyperparameter-tuning.qmd
 
 format:
   html:

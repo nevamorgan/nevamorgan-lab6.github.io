@@ -1,5 +1,5 @@
 ---
-title: "ESS 330 - Lab 6: Machine Learning in Hydrology"
+title: "ESS 330: Lab 6 - Machine Learning in Hydrology"
 
 author: "Neva Morgan"
 
@@ -8,7 +8,7 @@ date: last-modified
 subtitle: "Using Tidymodels & CAMELS Data"
 ---
 
-
+# Using Tidymodels & CAMELS Data
 ```{r}
 library(tidyverse)
 library(tidymodels)

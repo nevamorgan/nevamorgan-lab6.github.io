@@ -7,9 +7,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Neva Morgan">
-<meta name="dcterms.date" content="2025-04-04">
+<meta name="dcterms.date" content="2025-04-17">
 
-<title>ESS 330 - Lab 6: Machine Learning in Hydrology – nevamorgan-lab6.github.io</title>
+<title>ESS 330: Lab 6 - Machine Learning in Hydrology – nevamorgan-lab6.github.io</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -4765,12 +4765,16 @@ vertical-align: -.125em;
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="./index.html" aria-current="page"> 
+    <a class="nav-link" href="./home.html"> 
 <span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./about.html"> 
-<span class="menu-text">About</span></a>
+    <a class="nav-link active" href="./index.html" aria-current="page"> 
+<span class="menu-text">ESS 330: Lab 6 - Machine Learning in Hydrology</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./nm-hyperparameter-tuning.html"> 
+<span class="menu-text">ESS330: Lab 8 - Hyperparameter Tuning QMD</span></a>
   </li>  
 </ul>
           </div> <!-- /navcollapse -->
@@ -4789,7 +4793,7 @@ vertical-align: -.125em;
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">ESS 330 - Lab 6: Machine Learning in Hydrology</h1>
+<h1 class="title">ESS 330: Lab 6 - Machine Learning in Hydrology</h1>
 <p class="subtitle lead">Using Tidymodels &amp; CAMELS Data</p>
 </div>
 
@@ -4807,7 +4811,7 @@ vertical-align: -.125em;
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">April 4, 2025</p>
+      <p class="date">April 17, 2025</p>
     </div>
   </div>
   
@@ -4819,6 +4823,8 @@ vertical-align: -.125em;
 </header>
 
 
+<section id="using-tidymodels-camels-data" class="level1">
+<h1>Using Tidymodels &amp; CAMELS Data</h1>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
@@ -5764,6 +5770,7 @@ p_mean_x_max_water_content  0.3080732  0.1398610   2.202709 2.807261e-02</code><
 <p>Based on the graph and evaluated workflow for the predicted mean streamflow as it is related to the observed mean streamflow, we can understand that the max water content of the soil profiles and mean precipitation do have a significant influence on streamflow that is seen in the predicted and observed values. Random forest helped us by being able to handle the large data set, while reducing the overfitting of a decision tree to increase it’s accuracy. We can see this in the graph above and the precipiation mean had more importance in relation to mean streamflow discharge. In the beginning of this modelling, we had an R-squared value of 0.7645, understanding that this data was not a successful fit to begin with, responds to how the importance of max water content differs from precipitation mean.</p>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->

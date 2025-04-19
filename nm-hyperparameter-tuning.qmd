@@ -1,3 +1,56 @@
 ---
-title: "nm-hyperparameter-tuning.qmd"
+title: "ESS330: Lab 8 - Hyperparameter Tuning QMD"
+
+author: "Neva Morgan"
+
+date: last-modified
+
+subtitle: "The Whole Game Plan"
 ---
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(glue)
+library(dplyr)
+library(powerjoin)
+library(skimr)
+library(visdat)
+library(ggpubr)
+library(root)
+```
+
+##Lets return to the CAMELS dataset we have been working with in Lab 6. We will use this dataset to predict the q_mean variable using the other variables in the dataset.
+
+```{r}
+#Reading in Data - Data Import/Tidy/Transform
+
+types <- c("clim", "geol", "soil", "topo", "vege", "hydro")
+
+remote_files  <- glue('{root}/camels_{types}.txt')
+
+local_files   <- glue('data/camels_{types}.txt')
+
+
+walk2(remote_files, local_files, download.file, quiet = TRUE)
+
+camels <- map(local_files, read_delim, show_col_types = FALSE) 
+
+camels <- power_full_join(camels ,by = 'gauge_id')
+
+
+#**Cleaning the data**
+# 1. Model Prep
+camels |> 
+  select(aridity, p_mean, q_mean) |> 
+  drop_na() |> 
+  cor()
+
+# 2. 
+
+```
+
+
+
+
+
