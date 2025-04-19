@@ -17,7 +17,6 @@ library(powerjoin)
 library(skimr)
 library(visdat)
 library(ggpubr)
-library(root)
 ```
 
 ##Lets return to the CAMELS dataset we have been working with in Lab 6. We will use this dataset to predict the q_mean variable using the other variables in the dataset.
