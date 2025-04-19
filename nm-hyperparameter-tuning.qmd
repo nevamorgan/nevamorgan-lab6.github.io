@@ -18,6 +18,7 @@ library(skimr)
 library(visdat)
 library(ggpubr)
 library(recipes)
+library(broom)
 ```
 
 ##Lets return to the CAMELS dataset we have been working with in Lab 6. We will use this dataset to predict the q_mean variable using the other variables in the dataset.
@@ -241,11 +242,13 @@ autoplot(model_params)
 
 # 6. Check the Skill of the Tuned Model
 
+my_metrics <- metric_set(mae, rmse, rsq)
+
 tuned_results <- tune_grid(
   rf8wf_tune,
   resamples = cam8_cv,
   grid = my.grid,
-  metrics = metric_set(mae, rmse, rsq),
+  metrics = my_metrics,
   control = control_grid(save_pred = TRUE)
 )
 
@@ -260,7 +263,7 @@ collect_metrics(tuned_results) %>%
   arrange(mean)
 
 show_best(tuned_results, metric = "mae", n = 5)
-### Based off of the MAE metric, we can see that the best hyperparameter is 51 predictor samples, with the minimum of nodes for trends at 39. Based on the results the minimum nodes has results that range relatively close together, potentially showing that it handles the predictive data to the trained data better between 26-39 nodes.
+### Based off of the MAE metric, we can see that the best hyperparameter is 21 predictor samples, with the minimum of nodes for trends at 38. Based on the results the minimum nodes has results that range relatively close together, potentially showing that it handles the predictive data to the trained data better between 30-39 nodes.
 
 hp_best <- select_best(
   tuned_results,
@@ -278,8 +281,6 @@ final_rf8_wf <- finalize_workflow(
 
 ```{r}
 # 1. Last Fit
-my_metrics <- metric_set(mae, rmse, rsq)
-
 
 final_rf8_fit <- last_fit(
   final_rf8_wf, split = cam8_split,
@@ -292,6 +293,97 @@ final_rf8_metfit <- collect_metrics(
   final_rf8_fit)
 
 print(final_rf8_metfit)
-### What we can understand from these results is that the final model performance with the test data
+### What we can understand from these results is that the final model performance with the test data is most telling in the relationship between MAE and RMSE. While RMSE is higher than MAE, it can tell us that most predictions are close to the actual observed values, but ther are some larger errors brining RMSE's value closer 1 than 0. The Rsq value is also not too alarming, especially for envrionmental data whcih is incredibly variable in variance, 73% of this data falling within the predicted values, is a good value.
+
+
+# 3. Collecting Predictions
+
+final8_pred <- collect_predictions(
+  final_rf8_fit)
+
+head(final8_pred)
+
+
+# 4. PLOTTING TIME :)
+
+ggplot(final8_pred, aes(x = .pred, y = logQmean)) +
+  geom_point(aes(color = .pred), alpha = 0.7) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "black") +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  scale_color_viridis_c() +
+  theme_minimal() +
+  labs(
+    title = "Final Model Predictions vs Actual LogQmean",
+    caption = "ESS330 Lab 8 - Neva Morgan",
+    x = "Predicted LogQmean",
+    y = "Actual LogQmean",
+    color = "Predicted"
+  )
+```
+
+## **Building a Map!**
+
+
+```{r}
+# Fit the final model to ALL DATA
+
+final_rf8_full <- final_rf8_wf %>%
+  fit(data = camels_8)
+
+
+# 1. Predict with augment()
+camels_8_aug <- camels_8 %>%
+  select(gauge_id, aridity, p_mean, logQmean)
+
+camels8_preds <- augment(
+  final_rf8_full, 
+  new_data = camels_8_aug)
+
+
+# 3. Residuals with mutate()
+
+camels8_preds <- camels8_preds %>%
+  mutate(
+    resid = (logQmean - 
+               .pred)^2)
+
+
+# 4. Building Prediction and Residual Maps
+
+camels8_coords <- read_delim("data/camels_topo.txt", show_col_types = FALSE) %>%
+  select(gauge_id, gauge_lat, gauge_lon)
+
+camels8_preds <- camels8_preds %>%
+  left_join(camels8_coords, by = "gauge_id")
+
+glimpse(camels8_preds)
+
+#Prediction:
+pred8_map <- ggplot(camels8_preds, aes(x = gauge_lon, y = gauge_lat)) +
+  geom_point(aes(color = .pred), size = 2, alpha = 0.8) +
+  scale_color_viridis_c(option = "C") +
+  coord_fixed(1.3) +
+  theme_linedraw() +
+  labs(title = "Predicted LogQmean", x = "Longitude", y = "Latitude", color = "Prediction")
+
+#Residual:
+resid8_map <- ggplot(camels8_preds, aes(x = gauge_lon, y = gauge_lat)) +
+  geom_point(aes(color = resid), size = 2, alpha = 0.8) +
+  scale_color_viridis_c(option = "A") +
+  coord_fixed(1.3) +
+  theme_linedraw() +
+  labs(title = "Residuals (Squared Error)", x = "Longitude", y = "Latitude", color = "Residual")
+
+
+# 6. PATCHWORK COMBINING
+library(patchwork)
+
+pred8_map + resid8_map +
+  plot_annotation(
+    title = "CAMELS Predicted and Residuals across CONUS",
+    caption = "ESS330 Lab 8 - Neva Morgan"
+  )
+
+
 ```
 
