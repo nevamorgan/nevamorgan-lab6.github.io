@@ -69,7 +69,8 @@ ggplot(camels_8, aes(x = aridity, y = p_mean)) +
   scale_color_viridis_c() +
   theme_linedraw() + 
   theme(legend.position = "bottom") + 
-  labs(title = "Aridity vs Rainfall vs Runnoff", 
+  labs(title = "Aridity vs Rainfall vs Runnoff",
+       caption = "ESS330 Lab 8 - Neva Morgan",
        x = "Aridity", 
        y = "Rainfall",
        color = "Mean Flow")
@@ -85,7 +86,8 @@ ggplot(camels_8, aes(x = aridity, y = p_mean)) +
   theme(legend.position = "bottom",
         legend.key.width = unit(2.5, "cm"),
         legend.key.height = unit(.5, "cm")) + 
-  labs(title = "Aridity vs Rainfall vs Runnoff", 
+  labs(title = "Aridity vs Rainfall vs Runnoff",
+       caption = "ESS330 Lab 8 - Neva Morgan",
        x = "Aridity", 
        y = "Rainfall",
        color = "Mean Flow") 
@@ -185,10 +187,13 @@ wf8 <- workflow_set(list(rec_8), list(lm8_mod, rf8_mod, b8_mod)) %>%
 autoplot(wf8)
 
 rank_results(wf8, rank_metric = "rmse", select_best = TRUE)
-#We can see that the random forest model performed better for both mapping the rsq and rmse.Since the random forest model had the lowest RMSE (0.527) and the highest Rsq (0.788) across the 10 resamples, this showed that it would be able to make more accurate predictions than the linear and xgboost models we tested in our workflow set. 
 
-# I selected the model Random Forest, using the 'ranger' engine, and a "regression" mode. The reason this combination of model testers works better for a large dataset like CAMELS is because Random forest handles nonlinearitys and interactions by using my computer's native software. As we have learned in class this Random Forests are also able to handle variable importance predictors, so irrelevant variables have less influence, making it less prone to overfitting.
 ```
+##### We can see that the random forest model performed better for both mapping the rsq and rmse.Since the random forest model had the lowest RMSE (0.527) and the highest Rsq (0.788) across the 10 resamples, this showed that it would be able to make more accurate predictions than the linear and xgboost models we tested in our workflow set. 
+
+##### I selected the model Random Forest, using the 'ranger' engine, and a "regression" mode. The reason this combination of model testers works better for a large dataset like CAMELS is because Random forest handles nonlinearitys and interactions by using my computer's native software. As we have learned in class this Random Forests are also able to handle variable importance predictors, so irrelevant variables have less influence, making it less prone to overfitting.
+
+
 
 ## **Model Tuning**
 
@@ -237,9 +242,13 @@ model_params <-  tune_grid(
   )
 
 autoplot(model_params)
-### From this graph I can see that as we increase the randomly selected predictor values: MAE, RMSE, and RSQ all increase in their ability to fit the model to the data better, with 60 being the maximum and best model fit number. We can see that as we use more predictors at each split, this will improve the accruacy overall of the random forest model used on the CAMELS dataset. ALTHOUGH, as we turn our attention towards the Minimal Node size, we can see there isn't a clear trend regarding the data, however, the data appears to be more balanced between 10-20 nodes with a similar trend for MAE, RMSE, and RSQ.
+
+```
+
+##### From this graph I can see that as we increase the randomly selected predictor values: MAE, RMSE, and RSQ all increase in their ability to fit the model to the data better, with 60 being the maximum and best model fit number. We can see that as we use more predictors at each split, this will improve the accruacy overall of the random forest model used on the CAMELS dataset. ALTHOUGH, as we turn our attention towards the Minimal Node size, we can see there isn't a clear trend regarding the data, however, the data appears to be more balanced between 10-20 nodes with a similar trend for MAE, RMSE, and RSQ.
 
 
+```{r}
 # 6. Check the Skill of the Tuned Model
 
 my_metrics <- metric_set(mae, rmse, rsq)
@@ -263,8 +272,13 @@ collect_metrics(tuned_results) %>%
   arrange(mean)
 
 show_best(tuned_results, metric = "mae", n = 5)
-### Based off of the MAE metric, we can see that the best hyperparameter is 21 predictor samples, with the minimum of nodes for trends at 38. Based on the results the minimum nodes has results that range relatively close together, potentially showing that it handles the predictive data to the trained data better between 30-39 nodes.
 
+```
+
+##### Based off of the MAE metric, we can see that the best hyperparameter is 21 predictor samples, with the minimum of nodes for trends at 38. Based on the results the minimum nodes has results that range relatively close together, potentially showing that it handles the predictive data to the trained data better between 30-39 nodes.
+
+
+```{r}
 hp_best <- select_best(
   tuned_results,
   metric = "mae")
@@ -276,6 +290,9 @@ final_rf8_wf <- finalize_workflow(
   rf8wf_tune, 
   hp_best)
 ```
+
+
+
 
 ## **Final Model Verification**
 
@@ -293,9 +310,11 @@ final_rf8_metfit <- collect_metrics(
   final_rf8_fit)
 
 print(final_rf8_metfit)
-### What we can understand from these results is that the final model performance with the test data is most telling in the relationship between MAE and RMSE. While RMSE is higher than MAE, it can tell us that most predictions are close to the actual observed values, but ther are some larger errors brining RMSE's value closer 1 than 0. The Rsq value is also not too alarming, especially for envrionmental data whcih is incredibly variable in variance, 73% of this data falling within the predicted values, is a good value.
+```
+##### What we can understand from these results is that the final model performance with the test data is most telling in the relationship between MAE and RMSE. While RMSE is higher than MAE, it can tell us that most predictions are close to the actual observed values, but ther are some larger errors brining RMSE's value closer 1 than 0. The Rsq value is also not too alarming, especially for envrionmental data whcih is incredibly variable in variance, 73% of this data falling within the predicted values, is a good value.
 
 
+```{r}
 # 3. Collecting Predictions
 
 final8_pred <- collect_predictions(
@@ -320,6 +339,8 @@ ggplot(final8_pred, aes(x = .pred, y = logQmean)) +
     color = "Predicted"
   )
 ```
+
+
 
 ## **Building a Map!**
 
